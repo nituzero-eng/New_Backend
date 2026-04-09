@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cloud Cost Optimizer — API Test Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <!-- ── SIDEBAR ─────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">☁️</span>
+      <span class="brand-name">CloudOpt</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="showSection('login')" id="nav-login">
+        <span class="nav-icon">🔐</span><span>Login</span>
+      </button>
+      <button class="nav-item" onclick="showSection('health')" id="nav-health">
+        <span class="nav-icon">❤️</span><span>Health</span>
+      </button>
+      <button class="nav-item" onclick="showSection('dashboard')" id="nav-dashboard">
+        <span class="nav-icon">📊</span><span>Dashboard</span>
+      </button>
+      <button class="nav-item" onclick="showSection('services')" id="nav-services">
+        <span class="nav-icon">🔧</span><span>Services</span>
+      </button>
+      <button class="nav-item" onclick="showSection('instance')" id="nav-instance">
+        <span class="nav-icon">🖥️</span><span>Instance Detail</span>
+      </button>
+      <button class="nav-item" onclick="showSection('ai')" id="nav-ai">
+        <span class="nav-icon">🤖</span><span>AI Agent</span>
+      </button>
+      <button class="nav-item" onclick="showSection('migration')" id="nav-migration">
+        <span class="nav-icon">🚀</span><span>Migration</span>
+      </button>
+      <button class="nav-item" onclick="showSection('multicloud')" id="nav-multicloud">
+        <span class="nav-icon">🌐</span><span>Multi-Cloud</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="data-mode-badge" id="dataBadge">
+        <span class="badge-dot mock"></span>
+        <span id="dataModeText">Mock Data</span>
+      </div>
+      <div class="token-status" id="tokenStatus">Not logged in</div>
+    </div>
+  </aside>
+
+  <!-- ── MAIN CONTENT ────────────────────────────────────── -->
+  <main class="main">
+    <header class="topbar">
+      <h1 class="page-title" id="pageTitle">Cloud Cost Optimizer — API Tester</h1>
+      <div class="topbar-right">
+        <span class="server-url">http://localhost:3000</span>
+        <button class="btn btn-sm btn-outline" onclick="checkHealth()">Check Health</button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ── LOGIN SECTION ──────────────────────────────── -->
+      <section id="section-login" class="section active">
+        <div class="card">
+          <div class="card-header">
+            <h2>🔐 Authentication</h2>
+            <p class="card-subtitle">Login to get a JWT token for protected API calls</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Username / Email</label>
+              <input type="text" id="loginUsername" value="admin" class="input" />
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input type="password" id="loginPassword" value="admin123" class="input" />
+            </div>
+            <div class="form-group">
+              <label>Cloud Providers</label>
+              <div class="checkbox-group">
+                <label class="check-label"><input type="checkbox" id="chk-aws" checked /> AWS</label>
+                <label class="check-label"><input type="checkbox" id="chk-azure" /> Azure</label>
+                <label class="check-label"><input type="checkbox" id="chk-gcp" /> GCP</label>
+              </div>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="doLogin()">Login</button>
+            <button class="btn btn-outline" onclick="doRegister()">Register (demo@test.com / pass123)</button>
+          </div>
+          <div id="loginResult" class="result-box"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>➕ Add Cloud Account</h2>
+            <p class="card-subtitle">Connect another cloud provider after login</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Cloud Provider</label>
+              <select id="addCloudSelect" class="input">
+                <option value="aws">AWS</option>
+                <option value="azure">Azure</option>
+                <option value="gcp">GCP</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="addCloudAccount()">Add Cloud Account</button>
+          <div id="addCloudResult" class="result-box"></div>
+        </div>
+      </section>
+
+      <!-- ── HEALTH SECTION ─────────────────────────────── -->
+      <section id="section-health" class="section">
+        <div class="card">
+          <div class="card-header">
+            <h2>❤️ Server Health</h2>
+            <p class="card-subtitle">Check server status, data mode, and Gemini AI configuration</p>
+          </div>
+          <button class="btn btn-primary" onclick="checkHealth()">GET /api/health</button>
+          <div id="healthResult" class="result-box"></div>
+        </div>
+      </section>
+
+      <!-- ── DASHBOARD SECTION ──────────────────────────── -->
+      <section id="section-dashboard" class="section">
+        <div class="card">
+          <div class="card-header">
+            <h2>📊 Dashboard Data</h2>
+            <p class="card-subtitle">Fetch full dashboard summary for a cloud provider</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Cloud Provider</label>
+              <select id="dashCloud" class="input">
+                <option value="aws">AWS</option>
+                <option value="azure">Azure</option>
+                <option value="gcp">GCP</option>
+              </select>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="getDashboard()">GET /api/dashboard/:cloud</button>
+            <button class="btn btn-outline" onclick="getAlerts()">GET Alerts</button>
+            <button class="btn btn-ghost" onclick="getDataStatus()">GET Data Status</button>
+            <button class="btn btn-ghost" onclick="refreshCache()">🔄 Refresh Cache</button>
+          </div>
+          <div id="dashResult" class="result-box"></div>
+        </div>
+      </section>
+
+      <!-- ── SERVICES SECTION ───────────────────────────── -->
+      <section id="section-services" class="section">
+        <div class="card">
+          <div class="card-header">
+            <h2>🔧 Services Detail</h2>
+            <p class="card-subtitle">Get all services or a specific service for a cloud</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Cloud Provider</label>
+              <select id="svcCloud" class="input" onchange="updateServiceOptions()">
+                <option value="aws">AWS</option>
+                <option value="azure">Azure</option>
+                <option value="gcp">GCP</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Service Key</label>
+              <select id="svcKey" class="input">
+                <option value="ec2">ec2</option>
+                <option value="lambda">lambda</option>
+                <option value="s3">s3</option>
+                <option value="rds">rds</option>
+                <option value="dynamodb">dynamodb</option>
+                <option value="cloudfront">cloudfront</option>
+                <option value="ecs">ecs</option>
+                <option value="elasticbeanstalk">elasticbeanstalk</option>
+              </select>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="getAllServices()">GET All Services</button>
+            <button class="btn btn-outline" onclick="getServiceDetail()">GET Service Detail</button>
+          </div>
+          <div id="svcResult" class="result-box"></div>
+        </div>
+      </section>
+
+      <!-- ── INSTANCE DETAIL SECTION ────────────────────── -->
+      <section id="section-instance" class="section">
+        <div class="card">
+          <div class="card-header">
+            <h2>🖥️ Instance Detail</h2>
+            <p class="card-subtitle">Get detailed info for a specific resource</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Cloud</label>
+              <select id="instCloud" class="input">
+                <option value="aws">AWS</option>
+                <option value="azure">Azure</option>
+                <option value="gcp">GCP</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Service Key</label>
+              <input type="text" id="instService" value="ec2" class="input" placeholder="e.g. ec2, lambda, s3" />
+            </div>
+            <div class="form-group" style="grid-column: span 2">
+              <label>Instance ID / Name</label>
+              <input type="text" id="instId" value="i-0ab12cd34ef56gh78" class="input" placeholder="ID or name" />
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="getInstanceDetail()">GET Instance Detail</button>
+          <div id="instResult" class="result-box"></div>
+        </div>
+      </section>
+
+      <!-- ── AI AGENT SECTION ───────────────────────────── -->
+      <section id="section-ai" class="section">
+        <div class="card">
+          <div class="card-header">
+            <h2>🤖 AI Overview Agent</h2>
+            <p class="card-subtitle">Get AI-generated cost analysis for a cloud account</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Cloud</label>
+              <select id="aiCloud" class="input">
+                <option value="aws">AWS</option>
+                <option value="azure">Azure</option>
+                <option value="gcp">GCP</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="getAIOverview()">🤖 GET AI Overview</button>
+          <div id="aiOverviewResult" class="result-box"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>💬 Interactive AI Chat</h2>
+            <p class="card-subtitle">Talk to the AI about your cloud costs</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Cloud Context</label>
+              <select id="chatCloud" class="input">
+                <option value="aws">AWS</option>
+                <option value="azure">Azure</option>
+                <option value="gcp">GCP</option>
+                <option value="">General (no cloud context)</option>
+              </select>
+            </div>
+          </div>
+          <div class="chat-box" id="chatBox">
+            <div class="chat-message system">
+              <span>👋 Welcome! Ask the AI agent about your cloud costs, optimization strategies, or any cloud-related questions.</span>
+            </div>
+          </div>
+          <div class="chat-input-row">
+            <input type="text" id="chatInput" class="input chat-input" placeholder="Ask a question... (e.g. Which service is costing the most?)"
+              onkeydown="if(event.key === 'Enter') sendChat()" />
+            <button class="btn btn-primary" onclick="sendChat()">Send</button>
+            <button class="btn btn-ghost" onclick="clearChat()">Clear</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>🖥️ Instance AI Analysis</h2>
+            <p class="card-subtitle">Get AI analysis for a specific resource</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Cloud</label>
+              <select id="aiInstCloud" class="input">
+                <option value="aws">AWS</option>
+                <option value="azure">Azure</option>
+                <option value="gcp">GCP</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Service</label>
+              <input type="text" id="aiInstService" value="ec2" class="input" />
+            </div>
+            <div class="form-group" style="grid-column: span 2">
+              <label>Instance ID</label>
+              <input type="text" id="aiInstId" value="i-0ab12cd34ef56gh78" class="input" />
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="getInstanceAI()">🤖 Analyze Instance</button>
+          <div id="aiInstResult" class="result-box"></div>
+        </div>
+      </section>
+
+      <!-- ── MIGRATION SECTION ───────────────────────────── -->
+      <section id="section-migration" class="section">
+        <div class="card">
+          <div class="card-header">
+            <h2>🚀 Migration Advisor</h2>
+            <p class="card-subtitle">Get AI-driven cloud migration recommendations</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Current Cloud</label>
+              <select id="migCurrentCloud" class="input">
+                <option value="aws">AWS</option>
+                <option value="azure">Azure</option>
+                <option value="gcp">GCP</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Target Cloud</label>
+              <select id="migTargetCloud" class="input">
+                <option value="">Best Fit (AI decides)</option>
+                <option value="aws">AWS</option>
+                <option value="azure">Azure</option>
+                <option value="gcp">GCP</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="getMigrationAdvice()">🚀 Get Migration Advice</button>
+
+          <div class="chat-box" id="migChatBox" style="margin-top: 16px; display:none">
+          </div>
+          <div id="migResult" class="result-box"></div>
+
+          <div class="card-header" style="margin-top: 24px; padding: 0">
+            <h3>💬 Ask Migration Questions</h3>
+          </div>
+          <div class="chat-input-row" style="margin-top: 12px">
+            <input type="text" id="migChatInput" class="input chat-input" placeholder="Ask about migration costs, risks, or service mappings..."
+              onkeydown="if(event.key === 'Enter') sendMigrationChat()" />
+            <button class="btn btn-primary" onclick="sendMigrationChat()">Ask</button>
+          </div>
+          <div id="migChatResult" class="result-box"></div>
+        </div>
+      </section>
+
+      <!-- ── MULTI-CLOUD SECTION ─────────────────────────── -->
+      <section id="section-multicloud" class="section">
+        <div class="card">
+          <div class="card-header">
+            <h2>🌐 Multi-Cloud Summary</h2>
+            <p class="card-subtitle">Compare costs across all connected clouds</p>
+          </div>
+          <div class="form-group">
+            <label>Select Clouds</label>
+            <div class="checkbox-group">
+              <label class="check-label"><input type="checkbox" id="mc-aws" checked /> AWS</label>
+              <label class="check-label"><input type="checkbox" id="mc-azure" checked /> Azure</label>
+              <label class="check-label"><input type="checkbox" id="mc-gcp" checked /> GCP</label>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="getMultiCloud()">GET Multi-Cloud Summary</button>
+            <button class="btn btn-outline" onclick="getBestCloud()">🤖 Best Cloud Recommendation</button>
+          </div>
+          <div id="multicloudResult" class="result-box"></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
