@@ -7,17 +7,19 @@ const config = require('../../../config/config');
  */
 
 let genAI = null;
-let model = null;
 
-function getModel() {
-  if (!model) {
-    if (!config.gemini.apiKey || config.gemini.apiKey === 'your_gemini_api_key_here') {
-      return null; // Will use placeholder responses
-    }
-    genAI = new GoogleGenerativeAI(config.gemini.apiKey);
-    model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+function getModel(systemInstruction) {
+  if (!config.gemini.apiKey || config.gemini.apiKey === 'your_gemini_api_key_here') {
+    return null; // Will use placeholder responses
   }
-  return model;
+  if (!genAI) {
+    genAI = new GoogleGenerativeAI(config.gemini.apiKey);
+  }
+  const modelConfig = { model: 'gemini-1.5-flash' };
+  if (systemInstruction) {
+    modelConfig.systemInstruction = systemInstruction;
+  }
+  return genAI.getGenerativeModel(modelConfig);
 }
 
 // Placeholder when no API key
@@ -166,9 +168,6 @@ Be specific with cost comparisons. Use markdown with emojis. Under 500 words.`;
 
 // ─── INTERACTIVE CHAT ────────────────────────────────────────────────────────
 async function chat(userMessage, cloudData, chatHistory = []) {
-  const m = getModel();
-  if (!m) return placeholderResponse('chat');
-
   const systemContext = cloudData ? `
 You are a Cloud Cost Optimization AI assistant. The user is asking about their cloud infrastructure.
 Current Cloud Summary: ${JSON.stringify({
@@ -181,13 +180,15 @@ Current Cloud Summary: ${JSON.stringify({
 Answer questions about their cloud costs, optimization strategies, and best practices. Be helpful, specific, and concise.
 ` : `You are a Cloud Cost Optimization AI assistant. Answer questions about cloud costs, optimization strategies, and best practices across AWS, Azure, and GCP. Be helpful and specific.`;
 
+  const m = getModel(systemContext);
+  if (!m) return placeholderResponse('chat');
+
   try {
     const chat = m.startChat({
       history: chatHistory.map(h => ({
         role: h.role,
         parts: [{ text: h.content }],
-      })),
-      systemInstruction: systemContext,
+      }))
     });
 
     const result = await chat.sendMessage(userMessage);

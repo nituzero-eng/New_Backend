@@ -1,0 +1,28 @@
+{
+  "users": [
+    {
+      "id": "user-001",
+      "username": "admin",
+      "email": "admin@cloudoptimizer.local",
+      "password": "admin123",
+      "name": "Admin User",
+      "connectedClouds": ["aws"]
+    },
+    {
+      "id": "user-002",
+      "username": "demo",
+      "email": "demo@cloudoptimizer.local",
+      "password": "demo123",
+      "name": "Demo User",
+      "connectedClouds": []
+    }
+  ],
+  "credentials": {
+    "user-001": {
+      "aws": {
+        "accessKeyId": "dummy",
+        "secretAccessKey": "dummy"
+      }
+    }
+  }
+}

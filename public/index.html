@@ -80,20 +80,66 @@
               <label>Password</label>
               <input type="password" id="loginPassword" value="admin123" class="input" />
             </div>
-            <div class="form-group">
-              <label>Cloud Providers</label>
-              <div class="checkbox-group">
-                <label class="check-label"><input type="checkbox" id="chk-aws" checked /> AWS</label>
-                <label class="check-label"><input type="checkbox" id="chk-azure" /> Azure</label>
-                <label class="check-label"><input type="checkbox" id="chk-gcp" /> GCP</label>
-              </div>
-            </div>
           </div>
           <div class="btn-row">
             <button class="btn btn-primary" onclick="doLogin()">Login</button>
-            <button class="btn btn-outline" onclick="doRegister()">Register (demo@test.com / pass123)</button>
+            <button class="btn btn-outline" onclick="showRegisterForm()">Need an account? Register</button>
           </div>
           <div id="loginResult" class="result-box"></div>
+        </div>
+
+        <div class="card" id="registerCard" style="display: none;">
+          <div class="card-header">
+            <h2>📝 Register</h2>
+            <p class="card-subtitle">Create a new account and connect your clouds</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Username</label>
+              <input type="text" id="regUsername" class="input" placeholder="e.g. jdoe" />
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="regEmail" class="input" placeholder="jdoe@example.com" />
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input type="password" id="regPassword" class="input" />
+            </div>
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" id="regName" class="input" placeholder="John Doe" />
+            </div>
+            <div class="form-group" style="grid-column: span 2">
+              <label>Select Cloud Providers</label>
+              <div class="checkbox-group">
+                <label class="check-label"><input type="checkbox" id="reg-aws" onchange="toggleCredentials('aws')" /> AWS</label>
+                <label class="check-label"><input type="checkbox" id="reg-azure" onchange="toggleCredentials('azure')" /> Azure</label>
+                <label class="check-label"><input type="checkbox" id="reg-gcp" onchange="toggleCredentials('gcp')" /> GCP</label>
+              </div>
+            </div>
+            
+            <div id="cred-aws" class="form-group" style="display: none; grid-column: span 2; background: var(--bg-hover); padding: 12px; border-radius: 8px;">
+              <label>AWS Credentials</label>
+              <input type="text" id="aws-accessKey" class="input mb-2" placeholder="Access Key ID" style="margin-bottom: 8px;" />
+              <input type="password" id="aws-secretKey" class="input" placeholder="Secret Access Key" />
+            </div>
+            <div id="cred-azure" class="form-group" style="display: none; grid-column: span 2; background: var(--bg-hover); padding: 12px; border-radius: 8px;">
+              <label>Azure Credentials</label>
+              <input type="text" id="azure-subId" class="input mb-2" placeholder="Subscription ID" style="margin-bottom: 8px;" />
+              <input type="password" id="azure-clientSecret" class="input" placeholder="Client Secret" />
+            </div>
+            <div id="cred-gcp" class="form-group" style="display: none; grid-column: span 2; background: var(--bg-hover); padding: 12px; border-radius: 8px;">
+              <label>GCP Credentials</label>
+              <input type="text" id="gcp-projectId" class="input mb-2" placeholder="Project ID" style="margin-bottom: 8px;" />
+              <input type="password" id="gcp-apiKey" class="input" placeholder="API Key" />
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="doRegister()">Register Account</button>
+            <button class="btn btn-ghost" onclick="hideRegisterForm()">Cancel</button>
+          </div>
+          <div id="registerResult" class="result-box"></div>
         </div>
 
         <div class="card">

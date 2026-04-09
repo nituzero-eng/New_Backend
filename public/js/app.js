@@ -97,34 +97,111 @@ function showSection(name) {
 }
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
+// ─── AUTH LOGIC ─────────────────────────────────────────────────────────────
+let connectedCloudsCache = [];
+try {
+  connectedCloudsCache = JSON.parse(localStorage.getItem('cloudopt_clouds') || '[]');
+} catch (e) {}
+
+function showRegisterForm() {
+  document.getElementById('registerCard').style.display = 'block';
+  document.getElementById('section-login').querySelector('.card').style.display = 'none';
+}
+
+function hideRegisterForm() {
+  document.getElementById('registerCard').style.display = 'none';
+  document.getElementById('section-login').querySelector('.card').style.display = 'block';
+}
+
+function toggleCredentials(cloud) {
+  const isChecked = document.getElementById(`reg-${cloud}`).checked;
+  document.getElementById(`cred-${cloud}`).style.display = isChecked ? 'block' : 'none';
+}
+
+function updateCloudDropdowns(clouds) {
+  if (!clouds || !Array.isArray(clouds) || clouds.length === 0) return;
+  connectedCloudsCache = clouds;
+  localStorage.setItem('cloudopt_clouds', JSON.stringify(clouds));
+  
+  const optionsHtml = clouds.map(c => `<option value="${c}">${c.toUpperCase()}</option>`).join('');
+  const optionsHtmlWithGeneral = optionsHtml + '<option value="">General (no cloud context)</option>';
+  
+  const dropdownIds = ['dashCloud', 'svcCloud', 'instCloud', 'aiCloud', 'aiInstCloud', 'migCurrentCloud'];
+  dropdownIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = optionsHtml;
+  });
+  
+  const chatCloud = document.getElementById('chatCloud');
+  if (chatCloud) chatCloud.innerHTML = optionsHtmlWithGeneral;
+}
+
 async function doLogin() {
   const username = document.getElementById('loginUsername').value;
   const password = document.getElementById('loginPassword').value;
-  const selectedClouds = ['aws', 'azure', 'gcp'].filter(c => document.getElementById(`chk-${c}`)?.checked);
 
   setLoading('loginResult', 'Logging in...');
-  const r = await apiCall('POST', '/auth/login', { username, password, selectedClouds });
+  const r = await apiCall('POST', '/auth/login', { username, password });
   r._path = '/auth/login';
 
   if (r.ok && r.data.token) {
     authToken = r.data.token;
     localStorage.setItem('cloudopt_token', authToken);
     updateTokenUI();
+    if (r.data.user && r.data.user.connectedClouds) {
+      updateCloudDropdowns(r.data.user.connectedClouds);
+    }
+    setTimeout(() => showSection('dashboard'), 1000);
   }
 
   showResult('loginResult', r);
 }
 
 async function doRegister() {
-  setLoading('loginResult', 'Registering...');
+  const username = document.getElementById('regUsername').value;
+  const email = document.getElementById('regEmail').value;
+  const password = document.getElementById('regPassword').value;
+  const name = document.getElementById('regName').value;
+  
+  const selectedClouds = ['aws', 'azure', 'gcp'].filter(c => document.getElementById(`reg-${c}`)?.checked);
+  
+  const credentials = {};
+  if (selectedClouds.includes('aws')) {
+    credentials.aws = {
+      accessKeyId: document.getElementById('aws-accessKey').value,
+      secretAccessKey: document.getElementById('aws-secretKey').value
+    };
+  }
+  if (selectedClouds.includes('azure')) {
+    credentials.azure = {
+      subscriptionId: document.getElementById('azure-subId').value,
+      clientSecret: document.getElementById('azure-clientSecret').value
+    };
+  }
+  if (selectedClouds.includes('gcp')) {
+    credentials.gcp = {
+      projectId: document.getElementById('gcp-projectId').value,
+      apiKey: document.getElementById('gcp-apiKey').value
+    };
+  }
+
+  setLoading('registerResult', 'Registering...');
   const r = await apiCall('POST', '/auth/register', {
-    username: 'demouser',
-    email: 'demo@test.com',
-    password: 'pass123',
-    name: 'Demo User',
+    username, email, password, name, selectedClouds, credentials
   });
   r._path = '/auth/register';
-  showResult('loginResult', r);
+  
+  if (r.ok && r.data.token) {
+    authToken = r.data.token;
+    localStorage.setItem('cloudopt_token', authToken);
+    updateTokenUI();
+    if (r.data.user && r.data.user.connectedClouds) {
+      updateCloudDropdowns(r.data.user.connectedClouds);
+    }
+    setTimeout(() => showSection('dashboard'), 1500);
+  }
+  
+  showResult('registerResult', r);
 }
 
 async function addCloudAccount() {
@@ -132,6 +209,9 @@ async function addCloudAccount() {
   setLoading('addCloudResult', 'Adding cloud account...');
   const r = await apiCall('POST', '/auth/cloud-account', { cloud, credentials: {} });
   r._path = '/auth/cloud-account';
+  if (r.ok && r.data.connectedClouds) {
+    updateCloudDropdowns(r.data.connectedClouds);
+  }
   showResult('addCloudResult', r);
 }
 
@@ -329,6 +409,9 @@ async function getBestCloud() {
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 updateTokenUI();
 updateDataModeBadge();
+if (connectedCloudsCache.length > 0) {
+  updateCloudDropdowns(connectedCloudsCache);
+}
 showSection('login');
 
 // If already logged in, show health first

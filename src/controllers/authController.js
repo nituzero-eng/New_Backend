@@ -1,34 +1,33 @@
 const jwt = require('jsonwebtoken');
 const config = require('../../config/config');
+const fs = require('fs');
+const path = require('path');
 
-/**
- * In-memory user store (replace with a database in production)
- * Passwords are plain for demo; in production use bcrypt
- */
-const users = [
-  {
-    id: 'user-001',
-    username: 'admin',
-    email: 'admin@cloudoptimizer.local',
-    password: 'admin123', // In production: hash with bcrypt
-    name: 'Admin User',
-    connectedClouds: [], // Will be populated on login/account addition
-  },
-  {
-    id: 'user-002',
-    username: 'demo',
-    email: 'demo@cloudoptimizer.local',
-    password: 'demo123',
-    name: 'Demo User',
-    connectedClouds: [],
-  },
-];
+const usersFilePath = path.join(__dirname, '../../data/users.json');
 
-// Per-user cloud credentials store (in-memory; use DB in production)
-const userCloudCredentials = {};
+function loadUsersData() {
+  try {
+    if (fs.existsSync(usersFilePath)) {
+      const data = fs.readFileSync(usersFilePath, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.error('[Auth] Error loading users data:', err);
+  }
+  return { users: [], credentials: {} };
+}
+
+function saveUsersData(data) {
+  try {
+    fs.writeFileSync(usersFilePath, JSON.stringify(data, null, 2), 'utf8');
+  } catch (err) {
+    console.error('[Auth] Error saving users data:', err);
+  }
+}
 
 function findUser(usernameOrEmail) {
-  return users.find(u => u.username === usernameOrEmail || u.email === usernameOrEmail);
+  const data = loadUsersData();
+  return data.users.find(u => u.username === usernameOrEmail || u.email === usernameOrEmail);
 }
 
 function generateToken(user) {
@@ -42,7 +41,7 @@ function generateToken(user) {
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
 async function login(req, res) {
   try {
-    const { username, password, selectedClouds } = req.body;
+    const { username, password } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({ success: false, message: 'Username and password are required' });
@@ -53,24 +52,7 @@ async function login(req, res) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    if (!selectedClouds || !Array.isArray(selectedClouds) || selectedClouds.length === 0) {
-      return res.status(400).json({ success: false, message: 'Please select at least one cloud provider' });
-    }
-
-    const validClouds = ['aws', 'azure', 'gcp'];
-    const invalidClouds = selectedClouds.filter(c => !validClouds.includes(c));
-    if (invalidClouds.length > 0) {
-      return res.status(400).json({ success: false, message: `Invalid cloud providers: ${invalidClouds.join(', ')}` });
-    }
-
-    // Store selected clouds for this user
-    userCloudCredentials[user.id] = userCloudCredentials[user.id] || {};
-    selectedClouds.forEach(cloud => {
-      if (!userCloudCredentials[user.id][cloud]) {
-        userCloudCredentials[user.id][cloud] = { connected: true, connectedAt: new Date().toISOString() };
-      }
-    });
-
+    const data = loadUsersData();
     const token = generateToken(user);
 
     return res.json({
@@ -82,7 +64,7 @@ async function login(req, res) {
         username: user.username,
         name: user.name,
         email: user.email,
-        connectedClouds: Object.keys(userCloudCredentials[user.id] || {}),
+        connectedClouds: Object.keys(data.credentials[user.id] || {}),
       },
     });
   } catch (err) {
@@ -94,21 +76,52 @@ async function login(req, res) {
 // ─── REGISTER ─────────────────────────────────────────────────────────────────
 async function register(req, res) {
   try {
-    const { username, email, password, name } = req.body;
+    const { username, email, password, name, selectedClouds, credentials } = req.body;
     if (!username || !email || !password || !name) {
       return res.status(400).json({ success: false, message: 'All fields are required' });
     }
     if (findUser(username) || findUser(email)) {
       return res.status(409).json({ success: false, message: 'Username or email already exists' });
     }
-    const newUser = { id: `user-${Date.now()}`, username, email, password, name, connectedClouds: [] };
-    users.push(newUser);
+    
+    const validClouds = ['aws', 'azure', 'gcp'];
+    const invalidClouds = (selectedClouds || []).filter(c => !validClouds.includes(c));
+    if (invalidClouds.length > 0) {
+      return res.status(400).json({ success: false, message: `Invalid cloud providers: ${invalidClouds.join(', ')}` });
+    }
+
+    const data = loadUsersData();
+    const newUser = { 
+      id: `user-${Date.now()}`, 
+      username, 
+      email, 
+      password, 
+      name, 
+      connectedClouds: selectedClouds || [] 
+    };
+    
+    data.users.push(newUser);
+    data.credentials[newUser.id] = {};
+    
+    // Save credentials provided during registration
+    if (selectedClouds && selectedClouds.length > 0) {
+      selectedClouds.forEach(cloud => {
+        data.credentials[newUser.id][cloud] = {
+          connected: true,
+          connectedAt: new Date().toISOString(),
+          credentials: (credentials && credentials[cloud]) ? credentials[cloud] : {}
+        };
+      });
+    }
+
+    saveUsersData(data);
     const token = generateToken(newUser);
+    
     return res.status(201).json({
       success: true,
       message: 'Registration successful',
       token,
-      user: { id: newUser.id, username, name, email, connectedClouds: [] },
+      user: { id: newUser.id, username, name, email, connectedClouds: selectedClouds || [] },
     });
   } catch (err) {
     console.error('[Auth] Register error:', err);
@@ -127,15 +140,27 @@ async function addCloudAccount(req, res) {
       return res.status(400).json({ success: false, message: `Invalid cloud: ${cloud}` });
     }
 
-    userCloudCredentials[userId] = userCloudCredentials[userId] || {};
-    userCloudCredentials[userId][cloud] = {
+    const data = loadUsersData();
+    data.credentials[userId] = data.credentials[userId] || {};
+    data.credentials[userId][cloud] = {
       connected: true,
       connectedAt: new Date().toISOString(),
-      // In production: encrypt and store credentials securely
       credentials: credentials || {},
     };
+    
+    // Update user's connectedClouds array if not present
+    const userIndex = data.users.findIndex(u => u.id === userId);
+    if (userIndex !== -1) {
+      if (!data.users[userIndex].connectedClouds) {
+        data.users[userIndex].connectedClouds = [];
+      }
+      if (!data.users[userIndex].connectedClouds.includes(cloud)) {
+        data.users[userIndex].connectedClouds.push(cloud);
+      }
+    }
 
-    const connectedClouds = Object.keys(userCloudCredentials[userId]);
+    saveUsersData(data);
+    const connectedClouds = Object.keys(data.credentials[userId]);
 
     return res.json({
       success: true,
@@ -152,10 +177,11 @@ async function addCloudAccount(req, res) {
 async function getProfile(req, res) {
   try {
     const userId = req.user.id;
-    const user = users.find(u => u.id === userId);
+    const data = loadUsersData();
+    const user = data.users.find(u => u.id === userId);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-    const connectedClouds = Object.keys(userCloudCredentials[userId] || {});
+    const connectedClouds = Object.keys(data.credentials[userId] || {});
     return res.json({
       success: true,
       user: { id: user.id, username: user.username, name: user.name, email: user.email, connectedClouds },
@@ -170,10 +196,20 @@ async function removeCloudAccount(req, res) {
   try {
     const userId = req.user.id;
     const { cloud } = req.params;
-    if (userCloudCredentials[userId]) {
-      delete userCloudCredentials[userId][cloud];
+    const data = loadUsersData();
+    
+    if (data.credentials[userId]) {
+      delete data.credentials[userId][cloud];
     }
-    const connectedClouds = Object.keys(userCloudCredentials[userId] || {});
+    
+    // Remove from user's connectedClouds array
+    const userIndex = data.users.findIndex(u => u.id === userId);
+    if (userIndex !== -1 && data.users[userIndex].connectedClouds) {
+      data.users[userIndex].connectedClouds = data.users[userIndex].connectedClouds.filter(c => c !== cloud);
+    }
+    
+    saveUsersData(data);
+    const connectedClouds = Object.keys(data.credentials[userId] || {});
     return res.json({ success: true, message: `${cloud.toUpperCase()} account removed`, connectedClouds });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Internal server error' });
@@ -181,3 +217,4 @@ async function removeCloudAccount(req, res) {
 }
 
 module.exports = { login, register, addCloudAccount, getProfile, removeCloudAccount };
+
