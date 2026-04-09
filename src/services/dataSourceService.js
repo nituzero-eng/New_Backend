@@ -58,15 +58,7 @@ async function getData(cloud) {
       else if (cloud === 'gcp') data = await fetchGCPData();
     } catch (err) {
       console.error(`[DataSource] ⚠️ Real data fetch failed for ${cloud}: ${err.message}`);
-      console.warn('[DataSource] Falling back to mock data');
-      data = loadMockData(cloud);
-      data._meta_fallback = true;
-      data.alerts = data.alerts || [];
-      data.alerts.push({
-         type: "error",
-         title: "Live Data Fetch Failed",
-         message: `Failed to fetch live cloud data. Showing mock data instead. Error: ${err.message}`
-      });
+      throw new Error(`Real data fetch failed: ${err.message}. Please configure your API credentials.`);
     }
   } else {
     console.log(`[DataSource] USE_REAL_DATA=false — loading mock ${cloud.toUpperCase()} data`);
@@ -106,10 +98,9 @@ function invalidateCache(cloud) {
 
 // Get current data source mode
 function getDataSourceMode() {
-  const isFallback = dataStore.aws && dataStore.aws._meta_fallback;
   return {
     useRealData: config.useRealData,
-    mode: config.useRealData ? (isFallback ? 'mock' : 'real') : 'mock',
+    mode: config.useRealData ? 'real' : 'mock',
     cacheStatus: {
       aws: !!dataStore.aws,
       azure: !!dataStore.azure,
