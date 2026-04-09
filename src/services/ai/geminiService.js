@@ -97,7 +97,7 @@ Format using markdown with emojis. Be specific with dollar amounts. Keep it unde
     return result.response.text();
   } catch (err) {
     console.error('[Gemini] Overview generation failed:', err.message);
-    return placeholderResponse('overview');
+    return `Error from Google Gemini API: ${err.message}. Please check your API key validity and quota.`;
   }
 }
 
@@ -126,7 +126,7 @@ Be specific, use actual numbers from the data. Format with markdown and emojis. 
     return result.response.text();
   } catch (err) {
     console.error('[Gemini] Instance analysis failed:', err.message);
-    return placeholderResponse('instance');
+    return `Error from Google Gemini API: ${err.message}`;
   }
 }
 
@@ -162,7 +162,7 @@ Be specific with cost comparisons. Use markdown with emojis. Under 500 words.`;
     return result.response.text();
   } catch (err) {
     console.error('[Gemini] Migration advice failed:', err.message);
-    return placeholderResponse('migration');
+    return `Error from Google Gemini API: ${err.message}`;
   }
 }
 
@@ -230,7 +230,7 @@ Be data-driven and specific. Use markdown. Under 400 words.`;
     return result.response.text();
   } catch (err) {
     console.error('[Gemini] Best cloud recommendation failed:', err.message);
-    return placeholderResponse('migration');
+    return `Error from Google Gemini API: ${err.message}`;
   }
 }
 

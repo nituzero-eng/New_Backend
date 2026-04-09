@@ -61,6 +61,12 @@ async function getData(cloud) {
       console.warn('[DataSource] Falling back to mock data');
       data = loadMockData(cloud);
       data._meta_fallback = true;
+      data.alerts = data.alerts || [];
+      data.alerts.push({
+         type: "error",
+         title: "Live Data Fetch Failed",
+         message: `Failed to fetch live cloud data. Showing mock data instead. Error: ${err.message}`
+      });
     }
   } else {
     console.log(`[DataSource] USE_REAL_DATA=false — loading mock ${cloud.toUpperCase()} data`);
@@ -100,9 +106,10 @@ function invalidateCache(cloud) {
 
 // Get current data source mode
 function getDataSourceMode() {
+  const isFallback = dataStore.aws && dataStore.aws._meta_fallback;
   return {
     useRealData: config.useRealData,
-    mode: config.useRealData ? 'real' : 'mock',
+    mode: config.useRealData ? (isFallback ? 'mock' : 'real') : 'mock',
     cacheStatus: {
       aws: !!dataStore.aws,
       azure: !!dataStore.azure,

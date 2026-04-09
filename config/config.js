@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const config = {
   server: {
@@ -14,10 +15,10 @@ const config = {
   // ─── THE KEY FLAG ────────────────────────────────────────────────────────────
   // true  → fetch real-time data from cloud APIs
   // false → serve data from /data/mock/*.json files
-  useRealData: process.env.USE_REAL_DATA === 'true',
+  useRealData: String(process.env.USE_REAL_DATA).trim().toLowerCase() === 'true',
 
   gemini: {
-    apiKey: process.env.GEMINI_API_KEY || '',
+    apiKey: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : '',
   },
 
   aws: {
@@ -48,9 +49,17 @@ const config = {
 // Validate critical settings on startup
 function validate() {
   const warnings = [];
+  
+  console.log(`[DEBUG] Attempting to load API Key from .env loaded at: ${path.join(__dirname, '../.env')}`);
+  console.log(`[DEBUG] Loaded API Key length: ${config.gemini.apiKey.length}`);
+  console.log(`[DEBUG] Loaded API Key mask: ${config.gemini.apiKey.substring(0, 4)}...`);
+  
   if (!config.gemini.apiKey || config.gemini.apiKey === 'your_gemini_api_key_here') {
-    warnings.push('⚠️  GEMINI_API_KEY not set — AI features will return placeholder responses');
+    warnings.push('⚠️  GEMINI_API_KEY not set or invalid — AI features will return placeholder responses.');
+  } else {
+    console.log(`✅  GEMINI_API_KEY loaded successfully.`);
   }
+
   if (config.useRealData) {
     if (!config.aws.accessKeyId) warnings.push('⚠️  USE_REAL_DATA=true but AWS_ACCESS_KEY_ID is empty');
     if (!config.azure.subscriptionId) warnings.push('⚠️  USE_REAL_DATA=true but AZURE_SUBSCRIPTION_ID is empty');
